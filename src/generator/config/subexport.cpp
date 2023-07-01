@@ -1324,53 +1324,59 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
         scv.define(x.AllowInsecure);
         tls13.define(x.TLS13);
 
-        switch (x.Type) {
-            case ProxyType::VMess:
-                if (method == "auto")
-                    method = "chacha20-ietf-poly1305";
-                proxyStr = "vmess = " + hostname + ":" + port + ", method=" + method + ", password=" + id + ", aead=" +
-                           (x.AlterId == 0 ? "true" : "false");
-                if (tlssecure && !tls13.is_undef())
-                    proxyStr += ", tls13=" + std::string(tls13 ? "true" : "false");
-                if (transproto == "ws") {
-                    if (tlssecure)
-                        proxyStr += ", obfs=wss";
-                    else
-                        proxyStr += ", obfs=ws";
-                    proxyStr += ", obfs-host=" + host + ", obfs-uri=" + path;
-                } else if (tlssecure)
-                    proxyStr += ", obfs=over-tls, obfs-host=" + host;
-                break;
-            case ProxyType::Shadowsocks:
-                proxyStr = "shadowsocks = " + hostname + ":" + port + ", method=" + method + ", password=" + password;
-                if (!plugin.empty()) {
-                    switch (hash_(plugin)) {
-                        case "simple-obfs"_hash:
-                        case "obfs-local"_hash:
-                            if (!pluginopts.empty())
-                                proxyStr += ", " + replaceAllDistinct(pluginopts, ";", ", ");
-                            break;
-                        case "v2ray-plugin"_hash:
-                            pluginopts = replaceAllDistinct(pluginopts, ";", "&");
-                            plugin = getUrlArg(pluginopts, "mode") == "websocket" ? "ws" : "";
-                            host = getUrlArg(pluginopts, "host");
-                            path = getUrlArg(pluginopts, "path");
-                            tlssecure = pluginopts.find("tls") != pluginopts.npos;
-                            if (tlssecure && plugin == "ws") {
-                                plugin += 's';
-                                if (!tls13.is_undef())
-                                    proxyStr += ", tls13=" + std::string(tls13 ? "true" : "false");
-                            }
-                            proxyStr += ", obfs=" + plugin;
-                            if (!host.empty())
-                                proxyStr += ", obfs-host=" + host;
-                            if (!path.empty())
-                                proxyStr += ", obfs-uri=" + path;
-                            break;
-                        default:
-                            continue;
-                    }
+        switch(x.Type)
+        {
+        case ProxyType::VMess:
+            if(method == "auto")
+                method = "chacha20-ietf-poly1305";
+            proxyStr = "vmess = " + hostname + ":" + port + ", method=" + method + ", password=" + id;
+            if (x.AlterId != 0)
+                proxyStr += ", aead=false";
+            if(tlssecure && !tls13.is_undef())
+                proxyStr += ", tls13=" + std::string(tls13 ? "true" : "false");
+            if(transproto == "ws")
+            {
+                if(tlssecure)
+                    proxyStr += ", obfs=wss";
+                else
+                    proxyStr += ", obfs=ws";
+                proxyStr += ", obfs-host=" + host + ", obfs-uri=" + path;
+            }
+            else if(tlssecure)
+                proxyStr += ", obfs=over-tls, obfs-host=" + host;
+            break;
+        case ProxyType::Shadowsocks:
+            proxyStr = "shadowsocks = " + hostname + ":" + port + ", method=" + method + ", password=" + password;
+            if(!plugin.empty())
+            {
+                switch(hash_(plugin))
+                {
+                    case "simple-obfs"_hash:
+                    case "obfs-local"_hash:
+                        if(!pluginopts.empty())
+                            proxyStr += ", " + replaceAllDistinct(pluginopts, ";", ", ");
+                        break;
+                    case "v2ray-plugin"_hash:
+                        pluginopts = replaceAllDistinct(pluginopts, ";", "&");
+                        plugin = getUrlArg(pluginopts, "mode") == "websocket" ? "ws" : "";
+                        host = getUrlArg(pluginopts, "host");
+                        path = getUrlArg(pluginopts, "path");
+                        tlssecure = pluginopts.find("tls") != pluginopts.npos;
+                        if(tlssecure && plugin == "ws")
+                        {
+                            plugin += 's';
+                            if(!tls13.is_undef())
+                                proxyStr += ", tls13=" + std::string(tls13 ? "true" : "false");
+                        }
+                        proxyStr += ", obfs=" + plugin;
+                        if(!host.empty())
+                            proxyStr += ", obfs-host=" + host;
+                        if(!path.empty())
+                            proxyStr += ", obfs-uri=" + path;
+                        break;
+                    default: continue;
                 }
+            }
 
                 break;
             case ProxyType::ShadowsocksR:
